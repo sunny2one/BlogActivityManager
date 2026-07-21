@@ -1,0 +1,563 @@
+name: Build Blog Activity Manager APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Create Android project
+        shell: bash
+        run: |
+          set -e
+          mkdir -p app/src/main/java/com/sunny2one/blogactivitymanager
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
+
+          cat > settings.gradle.kts <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "BlogActivityManager"
+          include(":app")
+          EOF
+
+          cat > build.gradle.kts <<'EOF'
+          plugins {
+              id("com.android.application") version "8.7.3" apply false
+              id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+          }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          kotlin.code.style=official
+          android.nonTransitiveRClass=true
+          EOF
+
+          cat > app/build.gradle.kts <<'EOF'
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+
+          android {
+              namespace = "com.sunny2one.blogactivitymanager"
+              compileSdk = 35
+
+              defaultConfig {
+                  applicationId = "com.sunny2one.blogactivitymanager"
+                  minSdk = 26
+                  targetSdk = 35
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      proguardFiles(
+                          getDefaultProguardFile("proguard-android-optimize.txt"),
+                          "proguard-rules.pro"
+                      )
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+
+              buildFeatures {
+                  viewBinding = true
+              }
+          }
+
+          dependencies {
+              implementation("androidx.core:core-ktx:1.15.0")
+              implementation("androidx.appcompat:appcompat:1.7.0")
+              implementation("com.google.android.material:material:1.12.0")
+              implementation("androidx.activity:activity-ktx:1.10.0")
+          }
+          EOF
+
+          cat > app/proguard-rules.pro <<'EOF'
+          # No custom ProGuard rules.
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <queries>
+                  <package android:name="com.nhn.android.blog" />
+              </queries>
+
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="Blog Activity Manager"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.BlogActivityManager">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/res/values/colors.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="green_primary">#03C75A</color>
+              <color name="green_dark">#018A3E</color>
+              <color name="white">#FFFFFF</color>
+              <color name="black">#111111</color>
+              <color name="gray_bg">#F5F6F7</color>
+          </resources>
+          EOF
+
+          cat > app/src/main/res/values/themes.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Theme.BlogActivityManager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+                  <item name="colorPrimary">@color/green_primary</item>
+                  <item name="colorPrimaryVariant">@color/green_dark</item>
+                  <item name="colorOnPrimary">@color/white</item>
+                  <item name="android:navigationBarColor">@color/white</item>
+                  <item name="android:statusBarColor">@color/white</item>
+                  <item name="android:windowLightStatusBar">true</item>
+              </style>
+          </resources>
+          EOF
+
+          cat > app/src/main/res/values/strings.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Blog Activity Manager</string>
+          </resources>
+          EOF
+
+          cat > app/src/main/res/drawable/ic_launcher_foreground.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path android:fillColor="#03C75A" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M27,25h17l20,30v-30h17v58h-17l-20,-30v30h-17z"/>
+          </vector>
+          EOF
+
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/green_primary"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+
+          cp app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml \
+             app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+
+          cat > app/src/main/res/layout/activity_main.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:fillViewport="true"
+              android:background="@color/gray_bg">
+
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical"
+                  android:padding="18dp">
+
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Blog Activity Manager"
+                      android:textStyle="bold"
+                      android:textSize="25sp"
+                      android:textColor="@color/black" />
+
+                  <TextView
+                      android:id="@+id/statusText"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="8dp"
+                      android:text="상태: 대기 중"
+                      android:textSize="17sp"
+                      android:textColor="@color/green_dark" />
+
+                  <EditText
+                      android:id="@+id/keywordInput"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="16dp"
+                      android:hint="검색 키워드"
+                      android:inputType="text" />
+
+                  <EditText
+                      android:id="@+id/commentInput"
+                      android:layout_width="match_parent"
+                      android:layout_height="120dp"
+                      android:gravity="top|start"
+                      android:hint="사용할 댓글 문구"
+                      android:inputType="textMultiLine" />
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="horizontal">
+
+                      <Button
+                          android:id="@+id/saveButton"
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_weight="1"
+                          android:text="저장" />
+
+                      <Button
+                          android:id="@+id/copyButton"
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_marginStart="8dp"
+                          android:layout_weight="1"
+                          android:text="댓글 복사" />
+                  </LinearLayout>
+
+                  <TextView
+                      android:id="@+id/timerText"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="20dp"
+                      android:gravity="center"
+                      android:text="02:00"
+                      android:textStyle="bold"
+                      android:textSize="38sp" />
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="horizontal">
+
+                      <Button
+                          android:id="@+id/startButton"
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_weight="1"
+                          android:text="시작" />
+
+                      <Button
+                          android:id="@+id/pauseButton"
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_marginStart="8dp"
+                          android:layout_weight="1"
+                          android:text="일시정지" />
+
+                      <Button
+                          android:id="@+id/resetButton"
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_marginStart="8dp"
+                          android:layout_weight="1"
+                          android:text="초기화" />
+                  </LinearLayout>
+
+                  <Button
+                      android:id="@+id/openNaverButton"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="14dp"
+                      android:text="네이버 블로그 앱 열기" />
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="10dp"
+                      android:orientation="horizontal">
+
+                      <Button
+                          android:id="@+id/likeDoneButton"
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_weight="1"
+                          android:text="좋아요 완료" />
+
+                      <Button
+                          android:id="@+id/commentDoneButton"
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_marginStart="8dp"
+                          android:layout_weight="1"
+                          android:text="댓글 완료" />
+                  </LinearLayout>
+
+                  <Button
+                      android:id="@+id/skipButton"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="8dp"
+                      android:text="건너뜀 기록" />
+
+                  <TextView
+                      android:id="@+id/statsText"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="18dp"
+                      android:padding="14dp"
+                      android:background="@color/white"
+                      android:text="오늘 좋아요 0회 · 댓글 0회 · 건너뜀 0회"
+                      android:textSize="16sp" />
+              </LinearLayout>
+          </ScrollView>
+          EOF
+
+          cat > app/src/main/java/com/sunny2one/blogactivitymanager/MainActivity.kt <<'EOF'
+          package com.sunny2one.blogactivitymanager
+
+          import android.content.ClipData
+          import android.content.ClipboardManager
+          import android.content.Context
+          import android.content.Intent
+          import android.net.Uri
+          import android.os.Bundle
+          import android.os.CountDownTimer
+          import android.widget.Toast
+          import androidx.appcompat.app.AppCompatActivity
+          import com.sunny2one.blogactivitymanager.databinding.ActivityMainBinding
+          import java.util.Locale
+
+          class MainActivity : AppCompatActivity() {
+              private lateinit var binding: ActivityMainBinding
+              private val prefs by lazy {
+                  getSharedPreferences("blog_activity_manager", MODE_PRIVATE)
+              }
+
+              private var timer: CountDownTimer? = null
+              private var remainingMs = 120_000L
+              private var isRunning = false
+              private var likeCount = 0
+              private var commentCount = 0
+              private var skipCount = 0
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  binding = ActivityMainBinding.inflate(layoutInflater)
+                  setContentView(binding.root)
+
+                  loadState()
+                  updateTimerText()
+                  updateStats()
+
+                  binding.saveButton.setOnClickListener { saveInputs() }
+                  binding.copyButton.setOnClickListener { copyComment() }
+                  binding.openNaverButton.setOnClickListener { openNaverBlog() }
+                  binding.startButton.setOnClickListener { startTimer() }
+                  binding.pauseButton.setOnClickListener { pauseTimer() }
+                  binding.resetButton.setOnClickListener { resetTimer() }
+
+                  binding.likeDoneButton.setOnClickListener {
+                      likeCount++
+                      saveCounters()
+                      updateStats()
+                  }
+
+                  binding.commentDoneButton.setOnClickListener {
+                      commentCount++
+                      saveCounters()
+                      updateStats()
+                  }
+
+                  binding.skipButton.setOnClickListener {
+                      skipCount++
+                      saveCounters()
+                      updateStats()
+                  }
+              }
+
+              private fun saveInputs() {
+                  prefs.edit()
+                      .putString("keyword", binding.keywordInput.text.toString())
+                      .putString("comment", binding.commentInput.text.toString())
+                      .apply()
+                  Toast.makeText(this, "저장했습니다.", Toast.LENGTH_SHORT).show()
+              }
+
+              private fun loadState() {
+                  binding.keywordInput.setText(prefs.getString("keyword", ""))
+                  binding.commentInput.setText(prefs.getString("comment", ""))
+                  remainingMs = prefs.getLong("remaining_ms", 120_000L)
+                  likeCount = prefs.getInt("like_count", 0)
+                  commentCount = prefs.getInt("comment_count", 0)
+                  skipCount = prefs.getInt("skip_count", 0)
+              }
+
+              private fun copyComment() {
+                  val text = binding.commentInput.text.toString().trim()
+                  if (text.isEmpty()) {
+                      Toast.makeText(this, "댓글 문구를 먼저 입력해주세요.", Toast.LENGTH_SHORT).show()
+                      return
+                  }
+                  val clipboard =
+                      getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                  clipboard.setPrimaryClip(ClipData.newPlainText("blog_comment", text))
+                  Toast.makeText(this, "댓글을 복사했습니다.", Toast.LENGTH_SHORT).show()
+              }
+
+              private fun openNaverBlog() {
+                  val packageName = "com.nhn.android.blog"
+                  val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                  if (launchIntent != null) {
+                      startActivity(launchIntent)
+                  } else {
+                      Toast.makeText(
+                          this,
+                          "네이버 블로그 앱이 설치되어 있지 않습니다.",
+                          Toast.LENGTH_LONG
+                      ).show()
+                      runCatching {
+                          startActivity(
+                              Intent(
+                                  Intent.ACTION_VIEW,
+                                  Uri.parse("market://details?id=$packageName")
+                              )
+                          )
+                      }
+                  }
+              }
+
+              private fun startTimer() {
+                  if (isRunning) return
+                  if (remainingMs <= 0L) remainingMs = 120_000L
+                  isRunning = true
+                  binding.statusText.text = "상태: 작업 중"
+
+                  timer = object : CountDownTimer(remainingMs, 1_000L) {
+                      override fun onTick(millisUntilFinished: Long) {
+                          remainingMs = millisUntilFinished
+                          updateTimerText()
+                      }
+
+                      override fun onFinish() {
+                          remainingMs = 0L
+                          isRunning = false
+                          binding.statusText.text = "상태: 최소 작업시간 완료"
+                          updateTimerText()
+                          Toast.makeText(
+                              this@MainActivity,
+                              "최소 작업시간 2분이 완료되었습니다.",
+                              Toast.LENGTH_LONG
+                          ).show()
+                      }
+                  }.start()
+              }
+
+              private fun pauseTimer() {
+                  timer?.cancel()
+                  isRunning = false
+                  binding.statusText.text = "상태: 일시정지"
+                  prefs.edit().putLong("remaining_ms", remainingMs).apply()
+              }
+
+              private fun resetTimer() {
+                  timer?.cancel()
+                  isRunning = false
+                  remainingMs = 120_000L
+                  binding.statusText.text = "상태: 대기 중"
+                  updateTimerText()
+                  prefs.edit().putLong("remaining_ms", remainingMs).apply()
+              }
+
+              private fun updateTimerText() {
+                  val totalSeconds = (remainingMs / 1_000L).coerceAtLeast(0L)
+                  val minutes = totalSeconds / 60L
+                  val seconds = totalSeconds % 60L
+                  binding.timerText.text =
+                      String.format(Locale.KOREA, "%02d:%02d", minutes, seconds)
+              }
+
+              private fun saveCounters() {
+                  prefs.edit()
+                      .putInt("like_count", likeCount)
+                      .putInt("comment_count", commentCount)
+                      .putInt("skip_count", skipCount)
+                      .putLong("remaining_ms", remainingMs)
+                      .apply()
+              }
+
+              private fun updateStats() {
+                  binding.statsText.text =
+                      "오늘 좋아요 ${likeCount}회 · 댓글 ${commentCount}회 · 건너뜀 ${skipCount}회"
+              }
+          }
+          EOF
+
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Collect APK
+        shell: bash
+        run: |
+          set -e
+          mkdir -p apk-output
+          APK_PATH="$(find app/build/outputs/apk/debug -type f -name '*.apk' | head -n 1)"
+          if [ -z "$APK_PATH" ]; then
+            echo "APK 파일을 찾지 못했습니다."
+            exit 1
+          fi
+          cp "$APK_PATH" apk-output/BlogActivityManager_v1.0-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlogActivityManager-v1.0-debug
+          path: apk-output/BlogActivityManager_v1.0-debug.apk
+          if-no-files-found: error
+          retention-days: 30
